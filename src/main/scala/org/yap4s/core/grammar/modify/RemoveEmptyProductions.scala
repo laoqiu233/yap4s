@@ -8,16 +8,26 @@ import org.yap4s.core.model.MatchResult.EmptyNode
 import scala.annotation.tailrec
 
 object RemoveEmptyProductions extends GrammarModifier {
-  override val modificationLabel: GrammarModification = GrammarModification.RemoveEmptyProductions
+  override val modificationLabel: GrammarModification =
+    GrammarModification.RemoveEmptyProductions
 
-  private case class InsertEmptyNodesRule[C](parentRule: Rule[C], emptyRule: Rule[C], removedPositions: Seq[Int]) extends ModifiedRule[C](GrammarModification.RemoveEmptyProductions, parentRule) {
+  private case class InsertEmptyNodesRule[C](
+      parentRule: Rule[C],
+      emptyRule: Rule[C],
+      removedPositions: Seq[Int]
+  ) extends ModifiedRule[C](
+        GrammarModification.RemoveEmptyProductions,
+        parentRule
+      ) {
     override val leftHandSide: NonTerminalToken = parentRule.leftHandSide
 
-    override val rightHandSide: Seq[RuleToken[C]] = removeAt(parentRule.rightHandSide, removedPositions)
+    override val rightHandSide: Seq[RuleToken[C]] =
+      removeAt(parentRule.rightHandSide, removedPositions)
 
     private val insertPositions = removePosToInsertPos(removedPositions)
 
-    private val startsWithEmptyProduction = insertPositions.headOption.fold(false)(_ == 0)
+    private val startsWithEmptyProduction =
+      insertPositions.headOption.fold(false)(_ == 0)
 
     private def buildEmptyFromPrev(prev: MatchResult): MatchResult =
       emptyRule.buildSubTree(
@@ -25,19 +35,35 @@ object RemoveEmptyProductions extends GrammarModifier {
         Nil
       )
 
-    override def reverseSubTreeModification(headNode: MatchResult, tailNodes: Seq[MatchResult]): (MatchResult, Seq[MatchResult]) =
+    override def reverseSubTreeModification(
+        headNode: MatchResult,
+        tailNodes: Seq[MatchResult]
+    ): (MatchResult, Seq[MatchResult]) =
       if (startsWithEmptyProduction) {
         val newHead = emptyRule.buildSubTree(
           EmptyNode(headNode.startIndex),
           Nil
         )
-        newHead -> insertAt(newHead, headNode +: tailNodes, insertPositions.tail, buildEmptyFromPrev)
+        newHead -> insertAt(
+          newHead,
+          headNode +: tailNodes,
+          insertPositions.tail,
+          buildEmptyFromPrev
+        )
       } else
-        headNode -> insertAt(headNode, tailNodes, insertPositions, buildEmptyFromPrev, currPos = 1)
+        headNode -> insertAt(
+          headNode,
+          tailNodes,
+          insertPositions,
+          buildEmptyFromPrev,
+          currPos = 1
+        )
   }
 
   @tailrec
-  override def modifyGrammar[T, C: TerminalTokenSupport](grammar: Grammar[T, C]): Grammar[T, C] = {
+  override def modifyGrammar[T, C: TerminalTokenSupport](
+      grammar: Grammar[T, C]
+  ): Grammar[T, C] = {
     val emptyProduction = grammar.rules.find(_.rightHandSide.isEmpty)
 
     emptyProduction match {
@@ -45,12 +71,13 @@ object RemoveEmptyProductions extends GrammarModifier {
         val emptyNonTerminal = emptyRule.leftHandSide
         val newRules = grammar.rules.filterNot(_ == emptyRule).flatMap { rule =>
           if (rule.rightHandSide.contains(emptyNonTerminal))
-            findEmptyPositionVariants(rule.rightHandSide, emptyNonTerminal).map { emptyIndexes =>
-              if (emptyIndexes.isEmpty)
-                rule
-              else
-                InsertEmptyNodesRule(rule, emptyRule, emptyIndexes)
-            }
+            findEmptyPositionVariants(rule.rightHandSide, emptyNonTerminal)
+              .map { emptyIndexes =>
+                if (emptyIndexes.isEmpty)
+                  rule
+                else
+                  InsertEmptyNodesRule(rule, emptyRule, emptyIndexes)
+              }
           else
             Seq(rule)
         }
@@ -63,20 +90,34 @@ object RemoveEmptyProductions extends GrammarModifier {
   }
 
   @tailrec
-  private def findEmptyPositionVariants[C](tokens: Seq[RuleToken[C]], tokenToRemove: Token, emptyPositions: Seq[Seq[Int]] = Seq(Nil), currIndex: Int = 0): Seq[Seq[Int]] =
+  private def findEmptyPositionVariants[C](
+      tokens: Seq[RuleToken[C]],
+      tokenToRemove: Token,
+      emptyPositions: Seq[Seq[Int]] = Seq(Nil),
+      currIndex: Int = 0
+  ): Seq[Seq[Int]] =
     tokens match {
       case Nil => emptyPositions
       case head :: tail =>
-        val nextEmptyPositions = emptyPositions++ (
+        val nextEmptyPositions = emptyPositions ++ (
           if (head == tokenToRemove)
             emptyPositions.map(_ :+ currIndex)
           else Nil
-          )
-        findEmptyPositionVariants(tail, tokenToRemove, nextEmptyPositions, currIndex + 1)
+        )
+        findEmptyPositionVariants(
+          tail,
+          tokenToRemove,
+          nextEmptyPositions,
+          currIndex + 1
+        )
     }
 
   @tailrec
-  private def removePosToInsertPos(positions: Seq[Int], currIndex: Int = 0, acc: Seq[Int] = Nil): Seq[Int] =
+  private def removePosToInsertPos(
+      positions: Seq[Int],
+      currIndex: Int = 0,
+      acc: Seq[Int] = Nil
+  ): Seq[Int] =
     positions match {
       case head :: tail =>
         removePosToInsertPos(tail, currIndex + 1, acc :+ (head - currIndex))
@@ -84,7 +125,12 @@ object RemoveEmptyProductions extends GrammarModifier {
     }
 
   @tailrec
-  private def removeAt[T](originalArr: Seq[T], positions: Seq[Int], currIndex: Int = 0, acc: Seq[T] = Nil): Seq[T] =
+  private def removeAt[T](
+      originalArr: Seq[T],
+      positions: Seq[Int],
+      currIndex: Int = 0,
+      acc: Seq[T] = Nil
+  ): Seq[T] =
     positions match {
       case nextPos :: positionsTail =>
         originalArr match {
@@ -100,7 +146,14 @@ object RemoveEmptyProductions extends GrammarModifier {
     }
 
   @tailrec
-  private def insertAt[T](prev: T, originalArr: Seq[T], positions: Seq[Int], buildNewFromPrev: T => T, currPos: Int = 0, acc: Seq[T] = Nil): Seq[T] =
+  private def insertAt[T](
+      prev: T,
+      originalArr: Seq[T],
+      positions: Seq[Int],
+      buildNewFromPrev: T => T,
+      currPos: Int = 0,
+      acc: Seq[T] = Nil
+  ): Seq[T] =
     positions match {
       case nextPos :: positionsTail =>
         if (currPos < nextPos && originalArr.nonEmpty) {

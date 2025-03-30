@@ -16,7 +16,8 @@ object Token {
     def value: C
   }
 
-  case class SimpleTerminalToken[@specialized C](value: C) extends RuleTerminalToken[C]
+  case class SimpleTerminalToken[@specialized C](value: C)
+      extends RuleTerminalToken[C]
 
   trait NonTerminalToken extends Token with RuleToken[Nothing] {
     override val isTerminal: Boolean = false

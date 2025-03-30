@@ -6,7 +6,9 @@ import org.yap4s.core.model.MatchResult.{MatchResultNode, SubTree}
 import org.yap4s.core.parse.Parser
 import org.yap4s.core.parse.cyk.CYKParser.{CykTable, CykTableCell}
 
-class CYKParser[-C](grammar: Grammar[_, C])(implicit ev: TerminalTokenSupport[C]) extends Parser[C] {
+class CYKParser[-C](grammar: Grammar[_, C])(implicit
+    ev: TerminalTokenSupport[C]
+) extends Parser[C] {
   override def produceRawParseTrees(tokens: Iterable[C]): Seq[SubTree] = {
     val finalTable = tokens.zipWithIndex.foldLeft[CykTable](Nil) {
       case (table, (token, index)) =>
@@ -16,7 +18,10 @@ class CYKParser[-C](grammar: Grammar[_, C])(implicit ev: TerminalTokenSupport[C]
     for {
       lastDiagonal <- finalTable.lastOption.toSeq
       lastCell <- lastDiagonal.lastOption.toSeq
-      matchedDerivations <- lastCell.matchedTokens.getOrElse(grammar.startToken, Nil)
+      matchedDerivations <- lastCell.matchedTokens.getOrElse(
+        grammar.startToken,
+        Nil
+      )
     } yield {
       matchedDerivations match {
         case result: SubTree => result
@@ -25,26 +30,31 @@ class CYKParser[-C](grammar: Grammar[_, C])(implicit ev: TerminalTokenSupport[C]
     }
   }
 
-  private def recognizeUnitRules(map: Map[Token, Seq[MatchResult]]): Map[Token, Seq[MatchResult]] = {
-    val newMatches = grammar.rules.flatMap { rule =>
-      rule.rightHandSide match {
-        case a :: Nil if a.isTerminal =>
-          map.getOrElse(a, Nil).map { result =>
-            rule.buildSubTree(result, Nil)
-          }
-        case _ => Nil
+  private def recognizeUnitRules(
+      map: Map[Token, Seq[MatchResult]]
+  ): Map[Token, Seq[MatchResult]] = {
+    val newMatches = grammar.rules
+      .flatMap { rule =>
+        rule.rightHandSide match {
+          case a :: Nil if a.isTerminal =>
+            map.getOrElse(a, Nil).map { result =>
+              rule.buildSubTree(result, Nil)
+            }
+          case _ => Nil
+        }
       }
-    }.groupBy(_.nonTerminal)
+      .groupBy(_.nonTerminal)
 
-    map ++ newMatches.map {
-      case (k, v) =>
-        k -> (map.getOrElse(k, Nil) ++ v)
+    map ++ newMatches.map { case (k, v) =>
+      k -> (map.getOrElse(k, Nil) ++ v)
     }
   }
 
   private def parseToken(table: CykTable, token: C, index: Int): CykTable = {
     val wrappedToken = ev.wrap(token)
-    val newTokenMap = recognizeUnitRules(Map(wrappedToken -> Seq(MatchResultNode(wrappedToken, index))))
+    val newTokenMap = recognizeUnitRules(
+      Map(wrappedToken -> Seq(MatchResultNode(wrappedToken, index)))
+    )
     val diagonal = Seq(CykTableCell(newTokenMap))
 
     val newDiagonal = (2 to index + 1).foldLeft(diagonal) {
@@ -54,13 +64,21 @@ class CYKParser[-C](grammar: Grammar[_, C])(implicit ev: TerminalTokenSupport[C]
           matchedToken <- grammar.rules.flatMap { rule =>
             rule.rightHandSide match {
               case a :: b :: Nil =>
-                val leftPartitionCell = table(index - length + partition)(partition - 1)
+                val leftPartitionCell =
+                  table(index - length + partition)(partition - 1)
                 val rightPartitionCell = diagonal(length - partition - 1)
 
                 for {
-                  leftMatchResult <- leftPartitionCell.matchedTokens.getOrElse(a, Nil)
-                  rightMatchResult <- rightPartitionCell.matchedTokens.getOrElse(b, Nil)
-                } yield rule.buildSubTree(leftMatchResult, Seq(rightMatchResult))
+                  leftMatchResult <- leftPartitionCell.matchedTokens.getOrElse(
+                    a,
+                    Nil
+                  )
+                  rightMatchResult <- rightPartitionCell.matchedTokens
+                    .getOrElse(b, Nil)
+                } yield rule.buildSubTree(
+                  leftMatchResult,
+                  Seq(rightMatchResult)
+                )
               case _ => Nil
             }
 

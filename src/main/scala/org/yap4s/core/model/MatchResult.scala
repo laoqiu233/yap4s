@@ -24,16 +24,23 @@ object MatchResult {
     def nonTerminal: NonTerminalToken
     def headNode: MatchResult
     def tailNodes: Seq[MatchResult]
-    def rebuildWithChildren(headNode: MatchResult, tailNodes: Seq[MatchResult]): SubTree
+    def rebuildWithChildren(
+        headNode: MatchResult,
+        tailNodes: Seq[MatchResult]
+    ): SubTree
 
     val nodes: Seq[MatchResult] = headNode +: tailNodes
 
     override def startIndex: Int = headNode.startIndex
-    override def endIndex: Int = tailNodes.lastOption.getOrElse(headNode).endIndex
+    override def endIndex: Int =
+      tailNodes.lastOption.getOrElse(headNode).endIndex
   }
 
   trait SubTreeBuilder {
-    def buildSubTree(headNode: MatchResult, tailNodes: Seq[MatchResult]): SubTree
+    def buildSubTree(
+        headNode: MatchResult,
+        tailNodes: Seq[MatchResult]
+    ): SubTree
   }
 
   trait SubTreeModification {
@@ -43,30 +50,39 @@ object MatchResult {
     def parentSubTreeBuilder: SubTreeBuilder
 
     // Takes the nodes matched for current rule and transform to nodes that would have been matched by the parent rule
-    def reverseSubTreeModification(headNode: MatchResult, tailNodes: Seq[MatchResult]): (MatchResult, Seq[MatchResult])
+    def reverseSubTreeModification(
+        headNode: MatchResult,
+        tailNodes: Seq[MatchResult]
+    ): (MatchResult, Seq[MatchResult])
   }
 
   case class ModifiedSubTree(
-                            nonTerminal: NonTerminalToken,
-                            headNode: MatchResult,
-                            tailNodes: Seq[MatchResult],
-                            appliedModification: SubTreeModification
-                            ) extends SubTree {
-    override def rebuildWithChildren(headNode: MatchResult, tailNodes: Seq[MatchResult]): SubTree =
+      nonTerminal: NonTerminalToken,
+      headNode: MatchResult,
+      tailNodes: Seq[MatchResult],
+      appliedModification: SubTreeModification
+  ) extends SubTree {
+    override def rebuildWithChildren(
+        headNode: MatchResult,
+        tailNodes: Seq[MatchResult]
+    ): SubTree =
       copy(headNode = headNode, tailNodes = tailNodes)
   }
 
   case class MatchResultTree(
-                              nonTerminal: NonTerminalToken,
-                              headNode: MatchResult,
-                              tailNodes: Seq[MatchResult],
-                              resultTransform: MatchResultExtractor[Any]
-                            ) extends SubTree {
+      nonTerminal: NonTerminalToken,
+      headNode: MatchResult,
+      tailNodes: Seq[MatchResult],
+      resultTransform: MatchResultExtractor[Any]
+  ) extends SubTree {
 
     def transformSelf: Any =
       resultTransform.transform(this)
 
-    override def rebuildWithChildren(headNode: MatchResult, tailNodes: Seq[MatchResult]): SubTree =
+    override def rebuildWithChildren(
+        headNode: MatchResult,
+        tailNodes: Seq[MatchResult]
+    ): SubTree =
       copy(headNode = headNode, tailNodes = tailNodes)
   }
 }

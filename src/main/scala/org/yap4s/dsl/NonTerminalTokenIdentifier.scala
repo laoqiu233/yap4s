@@ -8,6 +8,8 @@ sealed trait NonTerminalTokenIdentifier[T] {
 }
 
 object NonTerminalTokenIdentifier {
-  case class ExtractableNonTerminalToken[T](name: String) extends NonTerminalTokenIdentifier[T]
-  case class FictiveNonTerminalToken(name: String) extends NonTerminalTokenIdentifier[Any]
+  case class ExtractableNonTerminalToken[T](name: String)
+      extends NonTerminalTokenIdentifier[T]
+  case class FictiveNonTerminalToken(name: String)
+      extends NonTerminalTokenIdentifier[Any]
 }

@@ -1,6 +1,10 @@
 package org.yap4s
 
-import org.yap4s.core.grammar.modify.{ChomskyNormalForm, RemoveEmptyProductions, RemoveUnitRules}
+import org.yap4s.core.grammar.modify.{
+  ChomskyNormalForm,
+  RemoveEmptyProductions,
+  RemoveUnitRules
+}
 import org.yap4s.core.parse.cyk.CYK
 import org.yap4s.dsl._
 
@@ -14,20 +18,20 @@ object Main {
       // Define non-terminal tokens
       val Spaces = grammar fragment "spaces"
       val SpacesOrEmpty = grammar fragment "spaces_or_empty"
-      val Letter = grammar parses[Char] "letter"
-      val Name = grammar parses[String] "name"
-      val ListEnd = grammar parses[String] "list_end"
-      val ListElems = grammar parses[Seq[String]] "list_elems"
-      val NameList = grammar parses[Seq[String]] "name_list"
-      val Names = grammar parses[Seq[String]] "names"
+      val Letter = grammar parses [Char] "letter"
+      val Name = grammar parses [String] "name"
+      val ListEnd = grammar parses [String] "list_end"
+      val ListElems = grammar parses [Seq[String]] "list_elems"
+      val NameList = grammar parses [Seq[String]] "name_list"
+      val Names = grammar parses [Seq[String]] "names"
 
       // Define rules
       grammar rule Spaces := ' ' ++ Spaces || ' '
       grammar rule SpacesOrEmpty := Spaces || Empty
       grammar rule Letter := ('a' to 'z').map(!_)
 
-      grammar rule Name := Letter ++ Name map {
-        case (c, str) => c +: str
+      grammar rule Name := Letter ++ Name map { case (c, str) =>
+        c +: str
       }
       grammar rule Name := Letter.map(_.toString)
 
@@ -42,8 +46,8 @@ object Main {
         case (strings, str) => strings :+ str
       }) || (Empty as Nil)
 
-      grammar rule Names := Name ++ NameList map {
-        case (str, strings) => str +: strings
+      grammar rule Names := Name ++ NameList map { case (str, strings) =>
+        str +: strings
       }
 
       (grammar startsWith Names)

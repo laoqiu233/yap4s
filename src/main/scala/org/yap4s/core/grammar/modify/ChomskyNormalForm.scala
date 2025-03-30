@@ -1,6 +1,10 @@
 package org.yap4s.core.grammar.modify
 import org.yap4s.core.grammar.Rule.{CannonRule, ModifiedRule}
-import org.yap4s.core.grammar.Token.{NonTerminalToken, RuleToken, SimpleNonTerminalToken}
+import org.yap4s.core.grammar.Token.{
+  NonTerminalToken,
+  RuleToken,
+  SimpleNonTerminalToken
+}
 import org.yap4s.core.grammar.{Grammar, Rule, TerminalTokenSupport}
 import org.yap4s.core.model.MatchResult
 import org.yap4s.core.model.MatchResult.{ModifiedSubTree, SubTree}
@@ -8,36 +12,67 @@ import org.yap4s.core.model.MatchResult.{ModifiedSubTree, SubTree}
 import scala.annotation.tailrec
 
 object ChomskyNormalForm extends GrammarModifier {
-  override val modificationLabel: GrammarModification = GrammarModification.ChomskyNormalForm
+  override val modificationLabel: GrammarModification =
+    GrammarModification.ChomskyNormalForm
 
-  case class ChomskyRootRule[C](leftHandSide: NonTerminalToken, a: RuleToken[C], b: RuleToken[C], parentRule: Rule[C]) extends ModifiedRule[C](GrammarModification.ChomskyNormalForm, parentRule) {
+  case class ChomskyRootRule[C](
+      leftHandSide: NonTerminalToken,
+      a: RuleToken[C],
+      b: RuleToken[C],
+      parentRule: Rule[C]
+  ) extends ModifiedRule[C](GrammarModification.ChomskyNormalForm, parentRule) {
     private val unfoldCount = parentRule.rightHandSide.size - 2
 
     override val rightHandSide: Seq[RuleToken[C]] = Seq(a, b)
 
-    override def buildSubTree(headNode: MatchResult, tailNodes: Seq[MatchResult]): SubTree =
+    override def buildSubTree(
+        headNode: MatchResult,
+        tailNodes: Seq[MatchResult]
+    ): SubTree =
       ModifiedSubTree(leftHandSide, headNode, tailNodes, this)
 
     @tailrec
-    private def unfoldChomsky(currHead: Option[MatchResult], unfoldsLeft: Int = unfoldCount, acc: Seq[MatchResult] = Nil): Seq[MatchResult] =
+    private def unfoldChomsky(
+        currHead: Option[MatchResult],
+        unfoldsLeft: Int = unfoldCount,
+        acc: Seq[MatchResult] = Nil
+    ): Seq[MatchResult] =
       currHead match {
         case Some(value: SubTree) if unfoldsLeft > 0 =>
-          unfoldChomsky(value.tailNodes.headOption, unfoldsLeft - 1, acc :+ value.headNode)
+          unfoldChomsky(
+            value.tailNodes.headOption,
+            unfoldsLeft - 1,
+            acc :+ value.headNode
+          )
         case Some(value) => acc :+ value
-        case None => acc
+        case None        => acc
       }
 
-    override def reverseSubTreeModification(headNode: MatchResult, tailNodes: Seq[MatchResult]): (MatchResult, Seq[MatchResult]) =
+    override def reverseSubTreeModification(
+        headNode: MatchResult,
+        tailNodes: Seq[MatchResult]
+    ): (MatchResult, Seq[MatchResult]) =
       headNode -> unfoldChomsky(tailNodes.headOption)
   }
 
-  override def modifyGrammar[T, C: TerminalTokenSupport](grammar: Grammar[T, C]): Grammar[T, C] = {
+  override def modifyGrammar[T, C: TerminalTokenSupport](
+      grammar: Grammar[T, C]
+  ): Grammar[T, C] = {
     val newRules = grammar.rules.flatMap { rule =>
       rule.rightHandSide match {
         case tokens if tokens.size > 2 =>
-          val contRules = convertToChomskyNormalForm(rule.leftHandSide, tokens, s"${rule.leftHandSide}_cnf_${rule.hashCode()}")
+          val contRules = convertToChomskyNormalForm(
+            rule.leftHandSide,
+            tokens,
+            s"${rule.leftHandSide}_cnf_${rule.hashCode()}"
+          )
           val firstCont = contRules.head.rightHandSide
-          val rootRule = ChomskyRootRule(rule.leftHandSide, firstCont.head, firstCont.tail.head, rule)
+          val rootRule = ChomskyRootRule(
+            rule.leftHandSide,
+            firstCont.head,
+            firstCont.tail.head,
+            rule
+          )
           rootRule +: contRules.tail
         case _ => Seq(rule)
       }
@@ -46,13 +81,20 @@ object ChomskyNormalForm extends GrammarModifier {
   }
 
   @tailrec
-  private def convertToChomskyNormalForm[C](leftHandSide: NonTerminalToken, tokens: Seq[RuleToken[C]], tokensPrefix: String, acc: Seq[Rule[C]] = Nil): Seq[Rule[C]] = {
+  private def convertToChomskyNormalForm[C](
+      leftHandSide: NonTerminalToken,
+      tokens: Seq[RuleToken[C]],
+      tokensPrefix: String,
+      acc: Seq[Rule[C]] = Nil
+  ): Seq[Rule[C]] = {
 
     tokens match {
       case a :: b :: Nil =>
         acc :+ CannonRule(leftHandSide, Seq(a, b), _ => ())
       case a :: tail =>
-        val newNonTerminalToken = SimpleNonTerminalToken(s"${tokensPrefix}_${acc.size}")
+        val newNonTerminalToken = SimpleNonTerminalToken(
+          s"${tokensPrefix}_${acc.size}"
+        )
 
         convertToChomskyNormalForm(
           newNonTerminalToken,
