@@ -4,6 +4,8 @@ import org.yap4s.core.grammar.Token.NonTerminalToken
 import org.yap4s.core.grammar.{Grammar, Rule, TerminalTokenSupport, Token}
 import org.yap4s.core.model.MatchResult
 
+import scala.annotation.tailrec
+
 object RemoveUnitRules extends GrammarModifier {
   override val modificationLabel: GrammarModification =
     GrammarModification.RemoveUnitRules
@@ -26,16 +28,37 @@ object RemoveUnitRules extends GrammarModifier {
   override def modifyGrammar[T, C: TerminalTokenSupport](
       grammar: Grammar[T, C]
   ): Grammar[T, C] = {
-    val newRules = grammar.rules.flatMap { outerRule =>
+    val newRules = fixUnitRulesIterate(grammar.rules)
+    grammar.copy(rules = newRules)
+  }
+
+  @tailrec
+  private def fixUnitRulesIterate[T, C: TerminalTokenSupport](
+      rules: Seq[Rule[C]]
+  ): Seq[Rule[C]] = {
+    val hasUnitRules = rules.exists { rule =>
+      rule.rightHandSide match {
+        case a :: Nil if a.isNonTerminal => true
+        case _                           => false
+      }
+    }
+
+    if (hasUnitRules)
+      fixUnitRulesIterate(fixUnitRules(rules))
+    else
+      rules
+  }
+
+  private def fixUnitRules[T, C: TerminalTokenSupport](
+      rules: Seq[Rule[C]]
+  ): Seq[Rule[C]] =
+    rules.flatMap { outerRule =>
       outerRule.rightHandSide match {
         case a :: Nil if a.isNonTerminal =>
-          grammar.rules.filter(_.leftHandSide == a).map { innerRule =>
+          rules.filter(_.leftHandSide == a).map { innerRule =>
             AppendTransitiveNodeRule(outerRule, innerRule)
           }
         case _ => Seq(outerRule)
       }
     }
-
-    grammar.copy(rules = newRules)
-  }
 }
