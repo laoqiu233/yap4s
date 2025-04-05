@@ -7,10 +7,10 @@ import org.yap4s.core.model.MatchResult.MatchResultTree
 class NonTerminalTokenExtractor[T](
     tokenPosition: Int,
     expectedNonTerminal: NonTerminalToken
-) extends MatchResultNodesExtractor[T] {
-  override def transformNodes(nodes: Seq[MatchResult]): T =
+) extends MatchResultNodesExtractor[T, Any] {
+  override def transformNodes(nodes: Seq[MatchResult[Any]]): T =
     nodes.lift(tokenPosition) match {
-      case Some(tree: MatchResultTree) =>
+      case Some(tree: MatchResultTree[Any]) =>
         val tempResult = tree.transformSelf
         tempResult.asInstanceOf[T]
       case Some(value) =>

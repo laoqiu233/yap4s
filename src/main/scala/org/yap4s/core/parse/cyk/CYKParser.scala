@@ -6,11 +6,11 @@ import org.yap4s.core.model.MatchResult.{MatchResultNode, SubTree}
 import org.yap4s.core.parse.Parser
 import org.yap4s.core.parse.cyk.CYKParser.{CykTable, CykTableCell}
 
-class CYKParser[-C](grammar: Grammar[_, C])(implicit
+class CYKParser[C](grammar: Grammar[_, C])(implicit
     ev: TerminalTokenSupport[C]
 ) extends Parser[C] {
-  override def produceRawParseTrees(tokens: Iterable[C]): Seq[SubTree] = {
-    val finalTable = tokens.zipWithIndex.foldLeft[CykTable](Nil) {
+  override def produceRawParseTrees(tokens: Iterable[C]): Seq[SubTree[C]] = {
+    val finalTable = tokens.zipWithIndex.foldLeft[CykTable[C]](Nil) {
       case (table, (token, index)) =>
         parseToken(table, token, index)
     }
@@ -24,15 +24,15 @@ class CYKParser[-C](grammar: Grammar[_, C])(implicit
       )
     } yield {
       matchedDerivations match {
-        case result: SubTree => result
+        case result: SubTree[C] => result
         case other => throw new IllegalArgumentException(s"WTF $other")
       }
     }
   }
 
   private def recognizeUnitRules(
-      map: Map[Token, Seq[MatchResult]]
-  ): Map[Token, Seq[MatchResult]] = {
+      map: Map[Token, Seq[MatchResult[C]]]
+  ): Map[Token, Seq[MatchResult[C]]] = {
     val newMatches = grammar.rules
       .flatMap { rule =>
         rule.rightHandSide match {
@@ -50,10 +50,14 @@ class CYKParser[-C](grammar: Grammar[_, C])(implicit
     }
   }
 
-  private def parseToken(table: CykTable, token: C, index: Int): CykTable = {
+  private def parseToken(
+      table: CykTable[C],
+      token: C,
+      index: Int
+  ): CykTable[C] = {
     val wrappedToken = ev.wrap(token)
     val newTokenMap = recognizeUnitRules(
-      Map(wrappedToken -> Seq(MatchResultNode(wrappedToken, index)))
+      Map(wrappedToken -> Seq(MatchResultNode(token, index)))
     )
     val diagonal = Seq(CykTableCell(newTokenMap))
 
@@ -93,7 +97,7 @@ class CYKParser[-C](grammar: Grammar[_, C])(implicit
 }
 
 object CYKParser {
-  type CykTable = Seq[Seq[CykTableCell]]
+  type CykTable[C] = Seq[Seq[CykTableCell[C]]]
 
-  case class CykTableCell(matchedTokens: Map[Token, Seq[MatchResult]])
+  case class CykTableCell[C](matchedTokens: Map[Token, Seq[MatchResult[C]]])
 }

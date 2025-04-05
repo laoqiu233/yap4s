@@ -12,6 +12,6 @@ case class Grammar[+T, C: TerminalTokenSupport](
   override def toString: String =
     rules.mkString("\n")
 
-  def parseWith(factory: ParserFactory): factory.ProducedParser[T, C] =
+  def parseWith(factory: ParserFactory[C]): factory.ProducedParser[T, C] =
     factory.buildParser(this)
 }

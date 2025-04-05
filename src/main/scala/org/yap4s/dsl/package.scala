@@ -2,7 +2,7 @@ package org.yap4s
 
 import org.yap4s.core.grammar.TerminalTokenSupport
 import org.yap4s.core.grammar.Token.{RuleTerminalToken, SimpleTerminalToken}
-import org.yap4s.core.transform.NonTerminalTokenExtractor
+import org.yap4s.core.transform.{ImmediateExtractor, NonTerminalTokenExtractor}
 import org.yap4s.dsl.NonTerminalTokenIdentifier.{
   ExtractableNonTerminalToken,
   FictiveNonTerminalToken
@@ -18,12 +18,12 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 package object dsl {
-  val Empty: PlainRightHandSideDefinition[Any, Nothing] =
-    PlainDefinition0[Nothing](Nil)
+  val Empty: PlainRightHandSideDefinition[Any, Any] =
+    PlainDefinition0[Any](Nil)
 
   @inline implicit def nonTerminalTokenIdentifierIsRightHandSide[T: ClassTag](
       token: NonTerminalTokenIdentifier[T]
-  ): PlainDefinition1[T, Nothing] =
+  ): PlainDefinition1[T, Any] =
     PlainDefinition1(
       Seq(token.token),
       new NonTerminalTokenExtractor[T](0, token.token)
@@ -31,7 +31,7 @@ package object dsl {
 
   @inline implicit def fictiveNonTerminalIsRightHandSide(
       token: FictiveNonTerminalToken
-  ): PlainDefinition0[Nothing] =
+  ): PlainDefinition0[Any] =
     PlainDefinition0(Seq(token.token))
 
   @inline implicit def iterableOfSingularsIsMultiple[T, C](
@@ -50,6 +50,6 @@ package object dsl {
 
   implicit class TerminalTokenOps[T](val token: T) extends AnyVal {
     def unary_!(implicit ev: TerminalTokenSupport[T]): PlainDefinition1[T, T] =
-      PlainDefinition1(Seq(ev.wrap(token)), _ => token)
+      PlainDefinition1(Seq(ev.wrap(token)), new ImmediateExtractor[T](token))
   }
 }

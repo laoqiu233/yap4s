@@ -6,20 +6,22 @@ sealed trait Token {
 }
 
 object Token {
-  sealed trait RuleToken[+C] extends Token
+  sealed trait RuleToken[-C] extends Token
 
   trait TerminalToken extends Token {
     override val isTerminal: Boolean = true
   }
 
-  trait RuleTerminalToken[+C] extends TerminalToken with RuleToken[C] {
-    def value: C
+  trait RuleTerminalToken[-C] extends TerminalToken with RuleToken[C] {
+    def matches(otherValue: C): Boolean
   }
 
   case class SimpleTerminalToken[@specialized C](value: C)
-      extends RuleTerminalToken[C]
+      extends RuleTerminalToken[C] {
+    override def matches(otherValue: C): Boolean = value == otherValue
+  }
 
-  trait NonTerminalToken extends Token with RuleToken[Nothing] {
+  trait NonTerminalToken extends Token with RuleToken[Any] {
     override val isTerminal: Boolean = false
   }
 

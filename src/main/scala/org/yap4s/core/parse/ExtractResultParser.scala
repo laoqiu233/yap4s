@@ -4,10 +4,10 @@ import org.yap4s.core.model.MatchResult.{MatchResultTree, SubTree}
 
 import scala.util.Try
 
-trait ExtractResultParser[+T, -C] extends Parser[C] {
-  private def extractResult(resultTree: SubTree): Option[T] =
+trait ExtractResultParser[+T, C] extends Parser[C] {
+  private def extractResult[C1 <: C](resultTree: SubTree[C1]): Option[T] =
     resultTree match {
-      case result: MatchResultTree =>
+      case result: MatchResultTree[C1] =>
         Try(result.transformSelf.asInstanceOf[T]).toOption
     }
 

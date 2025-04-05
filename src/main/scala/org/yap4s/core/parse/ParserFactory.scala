@@ -2,10 +2,10 @@ package org.yap4s.core.parse
 
 import org.yap4s.core.grammar.{Grammar, TerminalTokenSupport}
 
-trait ParserFactory {
-  type ProducedParser[+T, -C] <: Parser[C]
+trait ParserFactory[-C] {
+  type ProducedParser[+T, C0 <: C] <: Parser[C0]
 
-  def buildParser[T, C](grammar: Grammar[T, C])(implicit
-      ev: TerminalTokenSupport[C]
-  ): ProducedParser[T, C]
+  def buildParser[T, C0 <: C](grammar: Grammar[T, C0])(implicit
+      ev: TerminalTokenSupport[C0]
+  ): ProducedParser[T, C0]
 }

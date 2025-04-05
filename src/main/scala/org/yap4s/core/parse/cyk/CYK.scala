@@ -8,13 +8,13 @@ import org.yap4s.core.parse.{
   ReverseModificationsParser
 }
 
-object CYK extends ParserFactory {
-  override type ProducedParser[+T, -C] = ExtractResultParser[T, C]
+object CYK extends ParserFactory[Any] {
+  override type ProducedParser[+T, C] = ExtractResultParser[T, C]
 
   override def buildParser[T, C](
       grammar: Grammar[T, C]
   )(implicit ev: TerminalTokenSupport[C]): ExtractResultParser[T, C] =
-    new CYKParser[C](grammar)(ev)
+    new CYKParser[C](grammar)
       with ExtractResultParser[T, C]
       with ReverseModificationsParser[C] {
       override protected def appliedModifications: Seq[GrammarModification] =

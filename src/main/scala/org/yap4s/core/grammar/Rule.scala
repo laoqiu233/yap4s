@@ -12,10 +12,9 @@ import org.yap4s.core.model.MatchResult.{
 }
 import org.yap4s.core.transform.MatchResultExtractor
 
-sealed trait Rule[C] extends SubTreeBuilder {
+sealed trait Rule[C] extends SubTreeBuilder[C] {
   def leftHandSide: NonTerminalToken
   def rightHandSide: Seq[RuleToken[C]]
-  def buildSubTree(headNode: MatchResult, tailNodes: Seq[MatchResult]): SubTree
 
   override def toString: String =
     s"(${this.getClass.getSimpleName}) $leftHandSide -> ${if (
@@ -28,12 +27,12 @@ object Rule {
   case class CannonRule[C](
       leftHandSide: NonTerminalToken,
       rightHandSide: Seq[RuleToken[C]],
-      extractor: MatchResultExtractor[Any]
+      extractor: MatchResultExtractor[Any, C]
   ) extends Rule[C] {
     override def buildSubTree(
-        headNode: MatchResult,
-        tailNodes: Seq[MatchResult]
-    ): SubTree =
+        headNode: MatchResult[C],
+        tailNodes: Seq[MatchResult[C]]
+    ): SubTree[C] =
       MatchResultTree(
         leftHandSide,
         headNode,
@@ -46,11 +45,11 @@ object Rule {
       val modification: GrammarModification,
       val parentSubTreeBuilder: Rule[C]
   ) extends Rule[C]
-      with SubTreeModification {
+      with SubTreeModification[C] {
     override def buildSubTree(
-        headNode: MatchResult,
-        tailNodes: Seq[MatchResult]
-    ): SubTree =
+        headNode: MatchResult[C],
+        tailNodes: Seq[MatchResult[C]]
+    ): SubTree[C] =
       ModifiedSubTree(
         leftHandSide,
         headNode,

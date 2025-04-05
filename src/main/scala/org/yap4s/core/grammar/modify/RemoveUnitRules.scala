@@ -19,9 +19,9 @@ object RemoveUnitRules extends GrammarModifier {
       innerRule.rightHandSide
 
     override def reverseSubTreeModification(
-        headNode: MatchResult,
-        tailNodes: Seq[MatchResult]
-    ): (MatchResult, Seq[MatchResult]) =
+        headNode: MatchResult[C],
+        tailNodes: Seq[MatchResult[C]]
+    ): (MatchResult[C], Seq[MatchResult[C]]) =
       innerRule.buildSubTree(headNode, tailNodes) -> Nil
   }
 

@@ -121,8 +121,8 @@ object BuildGrammar {
       rightHandSideDefinition match {
         case definition: PlainRightHandSideDefinition[T, C] =>
           handleSingularDefinition(definition)
-        case MultipleRightHandSideDefinition(definitions) =>
-          definitions.foreach(handleSingularDefinition)
+        case multi: MultipleRightHandSideDefinition[T, C] =>
+          multi.definitions.foreach(handleSingularDefinition)
       }
       nonTerminalToken
     }

@@ -4,12 +4,12 @@ import org.yap4s.core.grammar.modify.GrammarModification
 import org.yap4s.core.model.MatchResult
 import org.yap4s.core.model.MatchResult.{ModifiedSubTree, SubTree}
 
-trait ReverseModificationsParser[-C] extends Parser[C] {
+trait ReverseModificationsParser[C] extends Parser[C] {
   protected def appliedModifications: Seq[GrammarModification]
 
   abstract override def produceRawParseTrees(
       tokens: Iterable[C]
-  ): Seq[SubTree] = {
+  ): Seq[SubTree[C]] = {
     val producedTrees = super.produceRawParseTrees(tokens)
     producedTrees.map { subTree =>
       appliedModifications.reverse.foldLeft(subTree)(reverseModificationSubTree)
@@ -17,11 +17,11 @@ trait ReverseModificationsParser[-C] extends Parser[C] {
   }
 
   private def reverseModificationSubTree(
-      subTree: SubTree,
+      subTree: SubTree[C],
       modificationToReverse: GrammarModification
-  ): SubTree = {
+  ): SubTree[C] = {
     val newTree = subTree match {
-      case tree: ModifiedSubTree
+      case tree: ModifiedSubTree[C]
           if tree.appliedModification.modification == modificationToReverse =>
         val (reversedHead, reversedTail) = tree.appliedModification
           .reverseSubTreeModification(tree.headNode, tree.tailNodes)
@@ -38,11 +38,11 @@ trait ReverseModificationsParser[-C] extends Parser[C] {
   }
 
   private def reverseModifications(
-      node: MatchResult,
+      node: MatchResult[C],
       modificationToReverse: GrammarModification
-  ): MatchResult =
+  ): MatchResult[C] =
     node match {
-      case tree: SubTree =>
+      case tree: SubTree[C] =>
         reverseModificationSubTree(tree, modificationToReverse)
       case other => other
     }

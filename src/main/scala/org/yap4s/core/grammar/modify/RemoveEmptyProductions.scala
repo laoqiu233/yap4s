@@ -29,16 +29,16 @@ object RemoveEmptyProductions extends GrammarModifier {
     private val startsWithEmptyProduction =
       insertPositions.headOption.fold(false)(_ == 0)
 
-    private def buildEmptyFromPrev(prev: MatchResult): MatchResult =
+    private def buildEmptyFromPrev(prev: MatchResult[C]): MatchResult[C] =
       emptyRule.buildSubTree(
         EmptyNode(prev.endIndex),
         Nil
       )
 
     override def reverseSubTreeModification(
-        headNode: MatchResult,
-        tailNodes: Seq[MatchResult]
-    ): (MatchResult, Seq[MatchResult]) =
+        headNode: MatchResult[C],
+        tailNodes: Seq[MatchResult[C]]
+    ): (MatchResult[C], Seq[MatchResult[C]]) =
       if (startsWithEmptyProduction) {
         val newHead = emptyRule.buildSubTree(
           EmptyNode(headNode.startIndex),
